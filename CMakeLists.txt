@@ -5,21 +5,28 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+
 set(library_name sv_lib)
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(OpenCV REQUIRED)
 
 include_directories(
-  include
+  ${PROJECT_SOURCE_DIR}/include
 )
 
 add_library(${library_name}
   src/stereo_visual_odometry.cpp
+  src/extractor/ORBExtractor.cpp
 )
 ament_target_dependencies(${library_name}
   rclcpp
+  OpenCV
 )
 
 
