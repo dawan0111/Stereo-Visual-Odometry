@@ -7,13 +7,27 @@ StereoVisualOdometry<T>::StereoVisualOdometry(
       extractor_(std::move(extractor)) {
   RCLCPP_INFO(this->get_logger(), "==== stereo_visual_odometry_node =====");
 
+  stereoImagePublisher_ =
+      this->create_publisher<sensor_msgs::msg::Image>("/stereo/image", 10);
+  std::string datasetPath =
+      "/home/kdw/dataset/data_odometry_gray/dataset/sequences/00";
+  cv::Mat leftImage = cv::imread(datasetPath + "/image_0/000000.png");
+  cv::Mat rightImage = cv::imread(datasetPath + "/image_1/000000.png");
+
+  extractor_->registerFairImage(std::move(leftImage), std::move(rightImage));
+  extractor_->compute();
+
   double frequency = 30.0;
   auto interval = std::chrono::duration<double>(1.0 / frequency);
-  auto callback = [this]() -> void {
+  timer_ = this->create_wall_timer(interval, [this]() -> void {
+    auto debugFrame = extractor_->getDebugFrame();
+    auto message =
+        cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", debugFrame)
+            .toImageMsg();
+    stereoImagePublisher_->publish(*message);
     // RCLCPP_INFO(this->get_logger(), "==== Timer Callback ====");
-  };
-  timer_ = this->create_wall_timer(interval, callback);
-  // extractor_ = std::move(extractor);
+    // this->stereoImagePublisher_->publish();
+  });
 }
 template <typename T> void StereoVisualOdometry<T>::registerExtractor() {
   RCLCPP_INFO(this->get_logger(), "==== registerExtractor =====");

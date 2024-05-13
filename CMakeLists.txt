@@ -14,6 +14,8 @@ set(library_name sv_lib)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 
 include_directories(
@@ -26,7 +28,9 @@ add_library(${library_name}
 )
 ament_target_dependencies(${library_name}
   rclcpp
+  sensor_msgs
   OpenCV
+  cv_bridge
 )
 
 
