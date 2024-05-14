@@ -1,16 +1,15 @@
 #include "stereo_visual_odometry/stereo_visual_odometry.hpp"
 namespace SVO {
 template <typename T>
-StereoVisualOdometry<T>::StereoVisualOdometry(
-    const rclcpp::NodeOptions &options, std::unique_ptr<T> extractor)
-    : Node("stereo_visual_odometry_node", options),
-      extractor_(std::move(extractor)) {
+StereoVisualOdometry<T>::StereoVisualOdometry(const rclcpp::NodeOptions &options, std::unique_ptr<T> extractor)
+    : Node("stereo_visual_odometry_node", options), extractor_(std::move(extractor)) {
   RCLCPP_INFO(this->get_logger(), "==== stereo_visual_odometry_node =====");
+  config_ = std::make_shared<Config>();
+  initializeParameter();
+  stereoImagePublisher_ = this->create_publisher<sensor_msgs::msg::Image>("/stereo/image", 10);
+  pointCloudPublisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/stereo/pointcloud", 10);
 
-  stereoImagePublisher_ =
-      this->create_publisher<sensor_msgs::msg::Image>("/stereo/image", 10);
-  std::string datasetPath =
-      "/home/kdw/dataset/data_odometry_gray/dataset/sequences/00";
+  std::string datasetPath = "/home/kdw/dataset/data_odometry_gray/dataset/sequences/00";
   cv::Mat leftImage = cv::imread(datasetPath + "/image_0/000000.png");
   cv::Mat rightImage = cv::imread(datasetPath + "/image_1/000000.png");
 
@@ -20,14 +19,54 @@ StereoVisualOdometry<T>::StereoVisualOdometry(
   double frequency = 30.0;
   auto interval = std::chrono::duration<double>(1.0 / frequency);
   timer_ = this->create_wall_timer(interval, [this]() -> void {
+    auto result = extractor_->getResult();
     auto debugFrame = extractor_->getDebugFrame();
-    auto message =
-        cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", debugFrame)
-            .toImageMsg();
+    std::vector<Eigen::Vector3d> worldPoints;
+
+    for (auto &match : result.matches) {
+      worldPoints.push_back(match.worldPoint);
+    }
+
+    auto message = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", debugFrame).toImageMsg();
+    message->header.stamp = this->get_clock()->now();
     stereoImagePublisher_->publish(*message);
-    // RCLCPP_INFO(this->get_logger(), "==== Timer Callback ====");
-    // this->stereoImagePublisher_->publish();
+
+    auto pointCloud = Utils::vector3dToPointCloud(worldPoints);
+    pointCloud.header.frame_id = "camera_optical_link";
+    pointCloud.header.stamp = this->get_clock()->now();
+    pointCloudPublisher_->publish(pointCloud);
   });
+}
+template <typename T> void StereoVisualOdometry<T>::initializeParameter() {
+  RCLCPP_INFO(this->get_logger(), "initializeParameter");
+
+  /* clang-format off */
+  std::vector<double> LCamK = {
+    718.856, 0.0, 607.1928,
+    0.0, 718.856, 185.2157,
+    0.0, 0.0,   1.0
+  };
+  std::vector<double> RCamK = {
+    718.856, 0.0, 607.1928,
+    0.0, 718.856, 185.2157,
+    0.0, 0.0,   1.0
+  };
+  double baseline = 0.537;
+
+  Eigen::Matrix3d LCamK_;
+  Eigen::Matrix3d RCamK_;
+
+  for (int8_t i = 0; i < 3; ++i) {
+    for (int8_t j = 0; j < 3; ++j) {
+      LCamK_(i, j) = LCamK[i * 3 + j];
+      RCamK_(i, j) = RCamK[i * 3 + j];
+    }
+  }
+  config_->setBaseline(baseline);
+  config_->setLeftCameraK(std::move(LCamK_));
+  config_->setRightCameraK(std::move(RCamK_));
+
+  extractor_->registerConfig(config_);
 }
 template <typename T> void StereoVisualOdometry<T>::registerExtractor() {
   RCLCPP_INFO(this->get_logger(), "==== registerExtractor =====");

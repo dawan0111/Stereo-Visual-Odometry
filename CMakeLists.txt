@@ -17,6 +17,7 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(tf2_eigen REQUIRED)
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/include
@@ -30,6 +31,7 @@ ament_target_dependencies(${library_name}
   rclcpp
   sensor_msgs
   OpenCV
+  tf2_eigen
   cv_bridge
 )
 
@@ -53,6 +55,10 @@ install(TARGETS
   stereo_visual_odometry_node
   DESTINATION lib/${PROJECT_NAME})
 
+install (DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}
+)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
