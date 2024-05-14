@@ -10,6 +10,7 @@ public:
   ORBExtractor();
   void compute() override;
   cv::Mat getDebugFrame() override;
+  void clear() override;
 
 private:
   cv::Ptr<cv::Feature2D> detector_;

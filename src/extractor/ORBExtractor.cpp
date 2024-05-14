@@ -5,6 +5,10 @@ ORBExtractor::ORBExtractor() : Extractor() {
   std::cout << "===== ORB Extractor =====" << std::endl;
   detector_ = cv::ORB::create();
   matcher_ = cv::BFMatcher::create(cv::NORM_HAMMING);
+
+  result_.leftKeyPoint.reserve(1000);
+  result_.rightKeyPoint.reserve(1000);
+  result_.matches.reserve(1000);
 }
 void ORBExtractor::compute() {
   std::cout << "[ORB_EXTRACTOR] compute!!" << std::endl;
@@ -12,14 +16,9 @@ void ORBExtractor::compute() {
   auto rightCamK = config_->getRightCameraK();
   auto baseline = config_->getBaseline();
 
-  std::cout << "baseline: " << baseline << std::endl;
-
   detector_->detectAndCompute(leftImage_, cv::noArray(), result_.leftKeyPoint, result_.leftDesc);
   detector_->detectAndCompute(rightImage_, cv::noArray(), result_.rightKeyPoint, result_.rightDesc);
   matcher_->match(result_.leftDesc, result_.rightDesc, matches_);
-
-  // std::cout << "baseline: " << baseline << std::endl;
-  // std::cout << "leftCamK: " << leftCamK << std::endl;
 
   for (auto &match : matches_) {
     if (match.distance < 40) {
@@ -35,12 +34,17 @@ void ORBExtractor::compute() {
       worldPoint(1) = y;
       worldPoint(2) = z;
 
-      std::cout << worldPoint(0) << std::endl;
-
       result_.matches.emplace_back(match.queryIdx, match.trainIdx, std::move(worldPoint),
                                    static_cast<double>(match.distance));
     }
   }
+}
+void ORBExtractor::clear() {
+  result_.leftKeyPoint.clear();
+  result_.rightKeyPoint.clear();
+  result_.leftDesc = cv::Mat::zeros(1, 1, CV_8SC1);
+  result_.rightDesc = cv::Mat::zeros(1, 1, CV_8SC1);
+  result_.matches.clear();
 }
 cv::Mat ORBExtractor::getDebugFrame() {
   cv::Mat resultImage;

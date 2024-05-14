@@ -31,10 +31,12 @@ public:
   void registerFairImage(cv::Mat &&leftImage, cv::Mat &&rightImage) {
     leftImage_ = leftImage;
     rightImage_ = rightImage;
+    clear();
   };
   void registerConfig(std::shared_ptr<Config> &config) { config_ = config; }
   const FrameDataT &getResult() { return result_; };
   virtual void compute() = 0;
+  virtual void clear() = 0;
   virtual cv::Mat getDebugFrame() = 0;
 
 protected:

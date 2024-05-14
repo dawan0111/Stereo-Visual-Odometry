@@ -13,7 +13,7 @@ def generate_launch_description():
     )
 
     # Node for publishing Eigen::Vector3d to PointCloud2
-    publisher_node = Node(
+    stereo_visual_odom_node = Node(
         package="stereo_visual_odometry",
         executable="stereo_visual_odometry_node",
         name=node_name,
@@ -39,7 +39,7 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            publisher_node,
+            stereo_visual_odom_node,
             static_tf,
         ]
     )
