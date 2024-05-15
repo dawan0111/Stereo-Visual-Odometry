@@ -2,7 +2,7 @@
 #define ORB_TRACKER_H_
 #include "stereo_visual_odometry/extractor/ORBExtractor.hpp"
 #include "stereo_visual_odometry/tracker/tracker.hpp"
-
+#include <g2o/core/solver.h>
 namespace SVO {
 class ORBTracker : public Tracker<ORBExtractor::FrameDataT> {
   using FrameDataT = ORBExtractor::FrameDataT;

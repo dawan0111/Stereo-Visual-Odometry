@@ -18,11 +18,13 @@ find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(tf2_eigen REQUIRED)
+find_package(g2o REQUIRED)
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/include
+  ${G2O_INCLUDE_DIRS}
 )
-
+message(INFO ${G2O_LIBRARIES})
 add_library(${library_name}
   src/stereo_visual_odometry.cpp
   src/extractor/ORBExtractor.cpp
@@ -34,6 +36,9 @@ ament_target_dependencies(${library_name}
   OpenCV
   tf2_eigen
   cv_bridge
+)
+target_link_libraries(${library_name}
+  ${G2O_LIBRARIES}
 )
 
 
