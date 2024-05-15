@@ -24,9 +24,8 @@ template <typename T, typename U> struct FrameData {
 };
 
 template <typename T, typename U> class Extractor {
-  using FrameDataT = FrameData<T, U>;
-
 public:
+  using FrameDataT = FrameData<T, U>;
   Extractor() { std::cout << "hello world!!" << std::endl; };
   void registerFairImage(cv::Mat &&leftImage, cv::Mat &&rightImage) {
     leftImage_ = leftImage;

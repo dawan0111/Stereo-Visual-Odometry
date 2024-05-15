@@ -4,6 +4,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "stereo_visual_odometry/config/config.hpp"
 #include "stereo_visual_odometry/extractor/ORBExtractor.hpp"
+#include "stereo_visual_odometry/tracker/ORBTracker.hpp"
 #include "stereo_visual_odometry/utils.hpp"
 #include <cv_bridge/cv_bridge.h>
 #include <message_filters/subscriber.h>
@@ -13,12 +14,12 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 namespace SVO {
-template <typename T> class StereoVisualOdometry : public rclcpp::Node {
+template <typename T, typename U> class StereoVisualOdometry : public rclcpp::Node {
 public:
   using Image = sensor_msgs::msg::Image;
   using ImageSyncPolicy = message_filters::sync_policies::ApproximateTime<Image, Image>;
   // explicit StereoVisualOdometry(const rclcpp::NodeOptions &);
-  explicit StereoVisualOdometry(const rclcpp::NodeOptions &, std::unique_ptr<T> extractor);
+  explicit StereoVisualOdometry(const rclcpp::NodeOptions &, std::unique_ptr<T> extractor, std::unique_ptr<U> tracker);
 
   // Deduction guide
   // template <typename T>
@@ -27,8 +28,6 @@ public:
 
 private:
   void ImageCallback(const Image::ConstSharedPtr &leftImage, const Image::ConstSharedPtr &rightImage);
-  void registerExtractor();
-  void registerTracker();
   void initializeParameter();
 
 private:
@@ -41,6 +40,7 @@ private:
 
   std::shared_ptr<Config> config_;
   std::unique_ptr<T> extractor_;
+  std::unique_ptr<U> tracker_;
 };
 } // namespace SVO
 

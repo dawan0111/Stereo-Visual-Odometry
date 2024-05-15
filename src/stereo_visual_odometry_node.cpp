@@ -1,6 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "stereo_visual_odometry/extractor/ORBExtractor.hpp"
 #include "stereo_visual_odometry/stereo_visual_odometry.hpp"
+#include "stereo_visual_odometry/tracker/ORBTracker.hpp"
 #include <iostream>
 
 int32_t main(int argc, char **argv) {
@@ -8,10 +9,11 @@ int32_t main(int argc, char **argv) {
 
   const rclcpp::NodeOptions options;
   auto extractor = std::make_unique<SVO::ORBExtractor>();
+  auto tracker = std::make_unique<SVO::ORBTracker>();
 
-  auto stereo_visual_odometry_node =
-      std::make_shared<SVO::StereoVisualOdometry<SVO::ORBExtractor>>(
-          options, std::move(extractor));
+  using SVONode = SVO::StereoVisualOdometry<SVO::ORBExtractor, SVO::ORBTracker>;
+
+  auto stereo_visual_odometry_node = std::make_shared<SVONode>(options, std::move(extractor), std::move(tracker));
 
   rclcpp::spin(stereo_visual_odometry_node->get_node_base_interface());
   rclcpp::shutdown();

@@ -26,6 +26,7 @@ include_directories(
 add_library(${library_name}
   src/stereo_visual_odometry.cpp
   src/extractor/ORBExtractor.cpp
+  src/tracker/ORBTracker.cpp
 )
 ament_target_dependencies(${library_name}
   rclcpp
