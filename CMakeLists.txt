@@ -19,6 +19,7 @@ find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(g2o REQUIRED)
+find_package(Sophus REQUIRED)
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/include
@@ -29,6 +30,7 @@ add_library(${library_name}
   src/stereo_visual_odometry.cpp
   src/extractor/ORBExtractor.cpp
   src/tracker/ORBTracker.cpp
+  src/optimization/G2O_Optimization.cpp
 )
 ament_target_dependencies(${library_name}
   rclcpp
@@ -39,6 +41,7 @@ ament_target_dependencies(${library_name}
 )
 target_link_libraries(${library_name}
   ${G2O_LIBRARIES}
+  Sophus::Sophus
 )
 
 
