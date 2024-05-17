@@ -68,14 +68,14 @@ private:
   Eigen::Matrix3d _K;
 };
 
-class G2O_Optimization {
+class G2O_Optimizer {
   using BlockSolverType = g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>>;
   using LinearSolverType = g2o::LinearSolverDense<BlockSolverType::PoseMatrixType>;
   using WorldPoints = std::vector<Eigen::Vector3d>;
   using CameraPoints = std::vector<Eigen::Vector2d>;
 
 public:
-  G2O_Optimization();
+  G2O_Optimizer();
   void BundleAdjustment(const WorldPoints &points3D, const CameraPoints &point2D, const Eigen::Matrix3d &K,
                         Sophus::SE3d &pose);
 

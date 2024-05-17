@@ -30,7 +30,7 @@ add_library(${library_name}
   src/stereo_visual_odometry.cpp
   src/extractor/ORBExtractor.cpp
   src/tracker/ORBTracker.cpp
-  src/optimization/G2O_Optimization.cpp
+  src/optimizer/G2O_Optimizer.cpp
 )
 ament_target_dependencies(${library_name}
   rclcpp
