@@ -4,8 +4,8 @@ namespace SVO {
 G2O_Optimizer::G2O_Optimizer() {
   auto solver = new g2o::OptimizationAlgorithmGaussNewton(
       g2o::make_unique<BlockSolverType>(g2o::make_unique<LinearSolverType>()));
-  optimizer_.setAlgorithm(solver);
-  optimizer_.setVerbose(true);
+  optimizer_->setAlgorithm(solver);
+  optimizer_->setVerbose(true);
 }
 
 void G2O_Optimizer::BundleAdjustment(const WorldPoints &points3D, const CameraPoints &points2D,
@@ -13,7 +13,7 @@ void G2O_Optimizer::BundleAdjustment(const WorldPoints &points3D, const CameraPo
   VertexPose *vertexPose = new VertexPose(); // camera vertexPose
   vertexPose->setId(0);
   vertexPose->setEstimate(Sophus::SE3d());
-  optimizer_.addVertex(vertexPose);
+  optimizer_->addVertex(vertexPose);
 
   int index = 1;
   for (size_t i = 0; i < points2D.size(); ++i) {
@@ -24,16 +24,16 @@ void G2O_Optimizer::BundleAdjustment(const WorldPoints &points3D, const CameraPo
     edge->setVertex(0, vertexPose);
     edge->setMeasurement(p2d);
     edge->setInformation(Eigen::Matrix2d::Identity());
-    optimizer_.addEdge(edge);
+    optimizer_->addEdge(edge);
     index++;
   }
 
-  optimizer_.setVerbose(true);
-  optimizer_.initializeOptimization();
-  optimizer_.optimize(10);
+  optimizer_->setVerbose(true);
+  optimizer_->initializeOptimization();
+  optimizer_->optimize(10);
 
   pose = vertexPose->estimate();
 
-  optimizer_.clear();
+  optimizer_->clear();
 }
 } // namespace SVO

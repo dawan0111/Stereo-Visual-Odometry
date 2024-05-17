@@ -80,7 +80,7 @@ public:
                         Sophus::SE3d &pose);
 
 private:
-  g2o::SparseOptimizer optimizer_;
+  std::unique_ptr<g2o::SparseOptimizer> optimizer_;
 };
 } // namespace SVO
 #endif
