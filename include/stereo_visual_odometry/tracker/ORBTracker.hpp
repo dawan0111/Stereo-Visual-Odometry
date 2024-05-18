@@ -4,6 +4,8 @@
 #include "stereo_visual_odometry/optimizer/G2O_Optimizer.hpp"
 #include "stereo_visual_odometry/tracker/tracker.hpp"
 #include <g2o/core/solver.h>
+#include <opencv2/opencv.hpp>
+
 namespace SVO {
 class ORBTracker : public Tracker<ORBExtractor::FrameDataT> {
   using FrameDataT = ORBExtractor::FrameDataT;
@@ -14,6 +16,8 @@ public:
 
 private:
   std::unique_ptr<G2O_Optimizer> optimizer_;
+  cv::Ptr<cv::DescriptorMatcher> matcher_;
+  std::vector<cv::DMatch> matches_;
 };
 } // namespace SVO
 

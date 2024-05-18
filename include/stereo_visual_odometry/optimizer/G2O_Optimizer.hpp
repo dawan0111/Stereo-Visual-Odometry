@@ -76,11 +76,13 @@ class G2O_Optimizer {
 
 public:
   G2O_Optimizer();
+  ~G2O_Optimizer();
   void BundleAdjustment(const WorldPoints &points3D, const CameraPoints &point2D, const Eigen::Matrix3d &K,
                         Sophus::SE3d &pose);
 
 private:
   std::unique_ptr<g2o::SparseOptimizer> optimizer_;
+  g2o::OptimizationAlgorithmGaussNewton *solver_;
 };
 } // namespace SVO
 #endif

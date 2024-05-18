@@ -11,19 +11,27 @@ ORBExtractor::ORBExtractor() : Extractor() {
   result_.matches.reserve(1000);
 }
 void ORBExtractor::compute() {
-  std::cout << "[ORB_EXTRACTOR] compute!!" << std::endl;
-  auto leftCamK = config_->getLeftCameraK();
-  auto rightCamK = config_->getRightCameraK();
-  auto baseline = config_->getBaseline();
+  const auto &leftCamK = config_->getLeftCameraK();
+  const auto &baseline = config_->getBaseline();
 
-  detector_->detectAndCompute(leftImage_, cv::noArray(), result_.leftKeyPoint, result_.leftDesc);
-  detector_->detectAndCompute(rightImage_, cv::noArray(), result_.rightKeyPoint, result_.rightDesc);
-  matcher_->match(result_.leftDesc, result_.rightDesc, matches_);
+  std::vector<cv::KeyPoint> leftKeyPoints;
+  std::vector<cv::KeyPoint> rightKeyPoints;
+  cv::Mat leftDesc;
+  cv::Mat rightDesc;
+
+  leftKeyPoints.reserve(1000);
+  rightKeyPoints.reserve(1000);
+
+  detector_->detectAndCompute(leftImage_, cv::noArray(), leftKeyPoints, leftDesc);
+  detector_->detectAndCompute(rightImage_, cv::noArray(), rightKeyPoints, rightDesc);
+  matcher_->match(leftDesc, rightDesc, matches_);
+
+  int16_t i = 0;
 
   for (auto &match : matches_) {
     if (match.distance < 40) {
-      auto leftPoint = result_.leftKeyPoint[match.queryIdx];
-      auto rightPoint = result_.rightKeyPoint[match.trainIdx];
+      auto leftPoint = leftKeyPoints[match.queryIdx];
+      auto rightPoint = rightKeyPoints[match.trainIdx];
       Eigen::Vector3d worldPoint = Eigen::Vector3d::Zero();
 
       double z = (baseline * leftCamK(0, 0)) / (leftPoint.pt.x - rightPoint.pt.x);
@@ -34,8 +42,21 @@ void ORBExtractor::compute() {
       worldPoint(1) = y;
       worldPoint(2) = z;
 
-      result_.matches.emplace_back(match.queryIdx, match.trainIdx, std::move(worldPoint),
-                                   static_cast<double>(match.distance));
+      result_.leftKeyPoint.push_back(leftPoint);
+      result_.rightKeyPoint.push_back(rightPoint);
+
+      auto leftDescriptor = leftDesc.row(match.queryIdx).clone();
+      auto rightDescriptor = rightDesc.row(match.trainIdx).clone();
+
+      if (i < 1) {
+        result_.leftDesc = leftDescriptor;
+        result_.rightDesc = rightDescriptor;
+      } else {
+        cv::vconcat(result_.leftDesc, leftDescriptor, result_.leftDesc);
+        cv::vconcat(result_.rightDesc, rightDescriptor, result_.rightDesc);
+      }
+      result_.matches.emplace_back(i, i, std::move(worldPoint), static_cast<double>(match.distance));
+      ++i;
     }
   }
 }

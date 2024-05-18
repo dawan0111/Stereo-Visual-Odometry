@@ -3,7 +3,8 @@ namespace SVO {
 template <typename T, typename U>
 StereoVisualOdometry<T, U>::StereoVisualOdometry(const rclcpp::NodeOptions &options, std::unique_ptr<T> extractor,
                                                  std::unique_ptr<U> tracker)
-    : Node("stereo_visual_odometry_node", options), extractor_(std::move(extractor)), tracker_(std::move(tracker)) {
+    : Node("stereo_visual_odometry_node", options), extractor_(std::move(extractor)), tracker_(std::move(tracker)),
+      frameCount_(0), debugFlag_(true) {
   RCLCPP_INFO(this->get_logger(), "==== stereo_visual_odometry_node =====");
   config_ = std::make_shared<Config>();
   initializeParameter();
@@ -48,6 +49,7 @@ template <typename T, typename U> void StereoVisualOdometry<T, U>::initializePar
   config_->setRightCameraK(std::move(RCamK_));
 
   extractor_->registerConfig(config_);
+  tracker_->registerConfig(config_);
 }
 template <typename T, typename U> void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &leftImage, const Image::ConstSharedPtr &rightImage) {
   auto leftCVImage = cv_bridge::toCvCopy(leftImage, leftImage->encoding)->image;
@@ -55,22 +57,32 @@ template <typename T, typename U> void StereoVisualOdometry<T, U>::ImageCallback
   extractor_->registerFairImage(std::move(leftCVImage), std::move(rightCVImage));
   extractor_->compute();
 
-  auto result = extractor_->getResult();
-  auto debugFrame = extractor_->getDebugFrame();
-  std::vector<Eigen::Vector3d> worldPoints;
+  prevFrameData_ = frameData_;
+  frameData_ = extractor_->getResult();
 
-  for (auto &match : result.matches) {
-    worldPoints.push_back(match.worldPoint);
+  if (frameCount_ > 1) {
+    tracker_->compute(prevFrameData_, frameData_);
   }
 
-  auto message = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", debugFrame).toImageMsg();
-  message->header.stamp = this->get_clock()->now();
-  stereoImagePublisher_->publish(*message);
+  if (debugFlag_) {
+    auto debugFrame = extractor_->getDebugFrame();
+    std::vector<Eigen::Vector3d> worldPoints;
 
-  // auto pointCloud = Utils::vector3dToPointCloud(worldPoints);
-  // pointCloud.header.frame_id = "camera_optical_link";
-  // pointCloud.header.stamp = this->get_clock()->now();
-  // pointCloudPublisher_->publish(pointCloud);
+    for (auto &match : frameData_.matches) {
+      worldPoints.push_back(match.worldPoint);
+    }
+
+    auto message = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", debugFrame).toImageMsg();
+    message->header.stamp = this->get_clock()->now();
+    stereoImagePublisher_->publish(*message);
+
+    // auto pointCloud = Utils::vector3dToPointCloud(worldPoints);
+    // pointCloud.header.frame_id = "camera_optical_link";
+    // pointCloud.header.stamp = this->get_clock()->now();
+    // pointCloudPublisher_->publish(pointCloud);
+  }
+
+  ++frameCount_;
 }
 
 template class StereoVisualOdometry<SVO::ORBExtractor, SVO::ORBTracker>;

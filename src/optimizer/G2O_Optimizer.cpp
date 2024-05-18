@@ -2,9 +2,12 @@
 
 namespace SVO {
 G2O_Optimizer::G2O_Optimizer() {
-  auto solver = new g2o::OptimizationAlgorithmGaussNewton(
+  optimizer_ = std::make_unique<g2o::SparseOptimizer>();
+  solver_ = new g2o::OptimizationAlgorithmGaussNewton(
       g2o::make_unique<BlockSolverType>(g2o::make_unique<LinearSolverType>()));
-  optimizer_->setAlgorithm(solver);
+  std::cout << "G2O_Optimizer" << std::endl;
+  optimizer_->setAlgorithm(solver_);
+  std::cout << "G2O_Optimizer 2" << std::endl;
   optimizer_->setVerbose(true);
 }
 
@@ -24,6 +27,7 @@ void G2O_Optimizer::BundleAdjustment(const WorldPoints &points3D, const CameraPo
     edge->setVertex(0, vertexPose);
     edge->setMeasurement(p2d);
     edge->setInformation(Eigen::Matrix2d::Identity());
+
     optimizer_->addEdge(edge);
     index++;
   }
@@ -36,4 +40,6 @@ void G2O_Optimizer::BundleAdjustment(const WorldPoints &points3D, const CameraPo
 
   optimizer_->clear();
 }
+
+G2O_Optimizer::~G2O_Optimizer() { delete solver_; }
 } // namespace SVO

@@ -41,6 +41,12 @@ private:
   std::shared_ptr<Config> config_;
   std::unique_ptr<T> extractor_;
   std::unique_ptr<U> tracker_;
+
+  typename T::FrameDataT prevFrameData_;
+  typename T::FrameDataT frameData_;
+
+  int32_t frameCount_;
+  bool debugFlag_;
 };
 } // namespace SVO
 

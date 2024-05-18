@@ -20,12 +20,12 @@ find_package(OpenCV REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(g2o REQUIRED)
 find_package(Sophus REQUIRED)
+find_package(Ceres REQUIRED)
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/include
   ${G2O_INCLUDE_DIRS}
 )
-message(INFO ${G2O_LIBRARIES})
 add_library(${library_name}
   src/stereo_visual_odometry.cpp
   src/extractor/ORBExtractor.cpp
@@ -40,7 +40,9 @@ ament_target_dependencies(${library_name}
   cv_bridge
 )
 target_link_libraries(${library_name}
-  ${G2O_LIBRARIES}
+  g2o_core
+  g2o_stuff
+  ceres
   Sophus::Sophus
 )
 
