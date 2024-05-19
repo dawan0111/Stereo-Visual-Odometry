@@ -10,6 +10,7 @@ StereoVisualOdometry<T, U>::StereoVisualOdometry(const rclcpp::NodeOptions &opti
   initializeParameter();
 
   stereoImagePublisher_ = this->create_publisher<Image>("/stereo/image", 10);
+  trackingImagePublisher_ = this->create_publisher<Image>("/stereo/tracking", 10);
   pointCloudPublisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/stereo/pointcloud", 10);
   pathPublisher_ = this->create_publisher<nav_msgs::msg::Path>("/stereo/path", 10);
 
@@ -58,13 +59,12 @@ void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &left
                                                const Image::ConstSharedPtr &rightImage) {
   auto leftCVImage = cv_bridge::toCvCopy(leftImage, leftImage->encoding)->image;
   auto rightCVImage = cv_bridge::toCvCopy(rightImage, rightImage->encoding)->image;
-  extractor_->registerFairImage(std::move(leftCVImage), std::move(rightCVImage));
-  extractor_->compute();
+  extractor_->compute(leftCVImage, rightCVImage);
 
   prevFrameData_ = frameData_;
   frameData_ = extractor_->getResult();
 
-  if (frameCount_ > 1) {
+  if (frameCount_ >= 1) {
     tracker_->compute(prevFrameData_, frameData_);
     auto pose = tracker_->getPose();
     latestPose_ = pose.matrix() * latestPose_;
@@ -78,24 +78,32 @@ void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &left
   }
 
   if (debugFlag_) {
-    auto debugFrame = extractor_->getDebugFrame();
     std::vector<Eigen::Vector3d> worldPoints;
 
     for (auto &match : frameData_.matches) {
       worldPoints.push_back(match.worldPoint);
     }
 
-    auto message = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", debugFrame).toImageMsg();
+    auto message =
+        cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", extractor_->getDebugFrame(leftCVImage, rightCVImage))
+            .toImageMsg();
     message->header.stamp = this->get_clock()->now();
-    auto a = this->get_clock()->now();
     stereoImagePublisher_->publish(*message);
-
-    publishPath();
 
     auto pointCloud = Utils::vector3dToPointCloud(worldPoints);
     pointCloud.header.frame_id = "camera_optical_link";
     pointCloud.header.stamp = this->get_clock()->now();
     pointCloudPublisher_->publish(pointCloud);
+
+    if (frameCount_ >= 1) {
+      auto trackingImageMsg =
+          cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", tracker_->getDebugFrame(prevFrameData_, frameData_))
+              .toImageMsg();
+      trackingImageMsg->header.stamp = this->get_clock()->now();
+      trackingImagePublisher_->publish(*trackingImageMsg);
+    }
+
+    publishPath();
   }
 
   ++frameCount_;

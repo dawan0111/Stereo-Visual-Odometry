@@ -3,14 +3,15 @@
 namespace SVO {
 ORBExtractor::ORBExtractor() : Extractor() {
   std::cout << "===== ORB Extractor =====" << std::endl;
-  detector_ = cv::ORB::create();
+  detector_ = cv::ORB::create(2000);
   matcher_ = cv::BFMatcher::create(cv::NORM_HAMMING);
 
-  result_.leftKeyPoint.reserve(1000);
-  result_.rightKeyPoint.reserve(1000);
-  result_.matches.reserve(1000);
+  result_.leftKeyPoint.reserve(2000);
+  result_.rightKeyPoint.reserve(2000);
+  result_.matches.reserve(2000);
 }
-void ORBExtractor::compute() {
+void ORBExtractor::compute(const cv::Mat &leftImage, const cv::Mat &rightImage) {
+  clear();
   const auto &leftCamK = config_->getLeftCameraK();
   const auto &baseline = config_->getBaseline();
 
@@ -19,17 +20,19 @@ void ORBExtractor::compute() {
   cv::Mat leftDesc;
   cv::Mat rightDesc;
 
-  leftKeyPoints.reserve(1000);
-  rightKeyPoints.reserve(1000);
+  leftKeyPoints.reserve(2000);
+  rightKeyPoints.reserve(2000);
 
-  detector_->detectAndCompute(leftImage_, cv::noArray(), leftKeyPoints, leftDesc);
-  detector_->detectAndCompute(rightImage_, cv::noArray(), rightKeyPoints, rightDesc);
+  detector_->detectAndCompute(leftImage, cv::noArray(), leftKeyPoints, leftDesc);
+  detector_->detectAndCompute(rightImage, cv::noArray(), rightKeyPoints, rightDesc);
   matcher_->match(leftDesc, rightDesc, matches_);
 
   int16_t i = 0;
 
+  std::cout << (baseline * leftCamK(0, 0)) << std::endl;
+
   for (auto &match : matches_) {
-    if (match.distance < 40) {
+    if (match.distance < 30) {
       auto leftPoint = leftKeyPoints[match.queryIdx];
       auto rightPoint = rightKeyPoints[match.trainIdx];
       Eigen::Vector3d worldPoint = Eigen::Vector3d::Zero();
@@ -37,6 +40,10 @@ void ORBExtractor::compute() {
       double z = (baseline * leftCamK(0, 0)) / (leftPoint.pt.x - rightPoint.pt.x);
       double x = ((leftPoint.pt.x - leftCamK(0, 2)) * z) / leftCamK(0, 0);
       double y = ((leftPoint.pt.y - leftCamK(1, 2)) * z) / leftCamK(1, 1);
+
+      if (z >= 35 || z <= 0 || leftPoint.pt.y != rightPoint.pt.y || leftPoint.pt.x == rightPoint.pt.x) {
+        continue;
+      }
 
       worldPoint(0) = x;
       worldPoint(1) = y;
@@ -59,20 +66,24 @@ void ORBExtractor::compute() {
       ++i;
     }
   }
+
+  result_.leftImage = leftImage.clone();
+  result_.rightImage = rightImage.clone();
 }
 void ORBExtractor::clear() {
   result_.leftKeyPoint.clear();
   result_.rightKeyPoint.clear();
   result_.leftDesc = cv::Mat::zeros(1, 1, CV_8SC1);
   result_.rightDesc = cv::Mat::zeros(1, 1, CV_8SC1);
+  result_.leftImage = cv::Mat::zeros(1, 1, CV_8SC1);
+  result_.rightImage = cv::Mat::zeros(1, 1, CV_8SC1);
   result_.matches.clear();
 }
-cv::Mat ORBExtractor::getDebugFrame() {
+cv::Mat ORBExtractor::getDebugFrame(const cv::Mat &leftImage, const cv::Mat &rightImage) {
   cv::Mat resultImage;
-  cv::hconcat(leftImage_, rightImage_, resultImage);
-  int16_t size = std::max({result_.leftKeyPoint.size(), result_.leftKeyPoint.size()});
+  cv::hconcat(leftImage, rightImage, resultImage);
 
-  auto leftImageCol = leftImage_.cols;
+  auto leftImageCol = leftImage.cols;
   for (auto &match : result_.matches) {
     auto leftPoint = result_.leftKeyPoint[match.left_i];
     auto rightPoint = result_.rightKeyPoint[match.right_i];

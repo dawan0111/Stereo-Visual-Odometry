@@ -37,6 +37,7 @@ private:
 private:
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<Image>::SharedPtr stereoImagePublisher_;
+  rclcpp::Publisher<Image>::SharedPtr trackingImagePublisher_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointCloudPublisher_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pathPublisher_;
   std::shared_ptr<message_filters::Subscriber<Image>> leftImageSub_;

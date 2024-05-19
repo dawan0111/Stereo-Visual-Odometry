@@ -13,6 +13,7 @@ class ORBTracker : public Tracker<ORBExtractor::FrameDataT> {
 public:
   ORBTracker();
   void compute(const FrameDataT &prevFrameData, const FrameDataT &frameData) override;
+  cv::Mat getDebugFrame(const FrameDataT &prevFrameData, const FrameDataT &frameData) override;
 
 private:
   std::unique_ptr<G2O_Optimizer> optimizer_;

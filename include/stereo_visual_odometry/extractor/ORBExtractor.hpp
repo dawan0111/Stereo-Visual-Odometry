@@ -8,8 +8,8 @@ namespace SVO {
 class ORBExtractor : public Extractor<cv::KeyPoint, cv::Mat> {
 public:
   ORBExtractor();
-  void compute() override;
-  cv::Mat getDebugFrame() override;
+  void compute(const cv::Mat &leftImage, const cv::Mat &rightImage) override;
+  cv::Mat getDebugFrame(const cv::Mat &leftImage, const cv::Mat &rightImage) override;
   void clear() override;
 
 private:

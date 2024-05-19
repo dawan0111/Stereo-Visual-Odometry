@@ -21,26 +21,21 @@ template <typename T, typename U> struct FrameData {
   U leftDesc;
   U rightDesc;
   std::vector<MatchData> matches;
+  cv::Mat leftImage;
+  cv::Mat rightImage;
 };
 
 template <typename T, typename U> class Extractor {
 public:
   using FrameDataT = FrameData<T, U>;
   Extractor(){};
-  void registerFairImage(cv::Mat &&leftImage, cv::Mat &&rightImage) {
-    leftImage_ = leftImage;
-    rightImage_ = rightImage;
-    clear();
-  };
   void registerConfig(std::shared_ptr<Config> &config) { config_ = config; }
   const FrameDataT &getResult() { return result_; };
-  virtual void compute() = 0;
+  virtual void compute(const cv::Mat &leftImage, const cv::Mat &rightImage) = 0;
   virtual void clear() = 0;
-  virtual cv::Mat getDebugFrame() = 0;
+  virtual cv::Mat getDebugFrame(const cv::Mat &leftImage, const cv::Mat &rightImage) = 0;
 
 protected:
-  cv::Mat leftImage_;
-  cv::Mat rightImage_;
   cv::Mat debugImage_;
   FrameDataT result_;
   std::shared_ptr<Config> config_;
