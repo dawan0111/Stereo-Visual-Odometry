@@ -5,10 +5,8 @@ G2O_Optimizer::G2O_Optimizer() {
   optimizer_ = std::make_unique<g2o::SparseOptimizer>();
   solver_ = new g2o::OptimizationAlgorithmGaussNewton(
       g2o::make_unique<BlockSolverType>(g2o::make_unique<LinearSolverType>()));
-  std::cout << "G2O_Optimizer" << std::endl;
   optimizer_->setAlgorithm(solver_);
-  std::cout << "G2O_Optimizer 2" << std::endl;
-  optimizer_->setVerbose(true);
+  optimizer_->setVerbose(false);
 }
 
 void G2O_Optimizer::BundleAdjustment(const WorldPoints &points3D, const CameraPoints &points2D,
@@ -32,7 +30,7 @@ void G2O_Optimizer::BundleAdjustment(const WorldPoints &points3D, const CameraPo
     index++;
   }
 
-  optimizer_->setVerbose(true);
+  optimizer_->setVerbose(false);
   optimizer_->initializeOptimization();
   optimizer_->optimize(10);
 

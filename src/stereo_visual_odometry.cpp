@@ -4,13 +4,14 @@ template <typename T, typename U>
 StereoVisualOdometry<T, U>::StereoVisualOdometry(const rclcpp::NodeOptions &options, std::unique_ptr<T> extractor,
                                                  std::unique_ptr<U> tracker)
     : Node("stereo_visual_odometry_node", options), extractor_(std::move(extractor)), tracker_(std::move(tracker)),
-      frameCount_(0), debugFlag_(true) {
+      frameCount_(0), debugFlag_(true), latestPose_(Eigen::Matrix4d::Identity()) {
   RCLCPP_INFO(this->get_logger(), "==== stereo_visual_odometry_node =====");
   config_ = std::make_shared<Config>();
   initializeParameter();
 
   stereoImagePublisher_ = this->create_publisher<Image>("/stereo/image", 10);
   pointCloudPublisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/stereo/pointcloud", 10);
+  pathPublisher_ = this->create_publisher<nav_msgs::msg::Path>("/stereo/path", 10);
 
   leftImageSub_ = std::make_shared<message_filters::Subscriber<Image>>(this, "/stereo/image_left");
   rightImageSub_ = std::make_shared<message_filters::Subscriber<Image>>(this, "/stereo/image_right");
@@ -33,6 +34,7 @@ template <typename T, typename U> void StereoVisualOdometry<T, U>::initializePar
     0.0, 718.856, 185.2157,
     0.0, 0.0,   1.0
   };
+  /* clang-format on */
   double baseline = 0.537;
 
   Eigen::Matrix3d LCamK_;
@@ -51,7 +53,9 @@ template <typename T, typename U> void StereoVisualOdometry<T, U>::initializePar
   extractor_->registerConfig(config_);
   tracker_->registerConfig(config_);
 }
-template <typename T, typename U> void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &leftImage, const Image::ConstSharedPtr &rightImage) {
+template <typename T, typename U>
+void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &leftImage,
+                                               const Image::ConstSharedPtr &rightImage) {
   auto leftCVImage = cv_bridge::toCvCopy(leftImage, leftImage->encoding)->image;
   auto rightCVImage = cv_bridge::toCvCopy(rightImage, rightImage->encoding)->image;
   extractor_->registerFairImage(std::move(leftCVImage), std::move(rightCVImage));
@@ -62,6 +66,15 @@ template <typename T, typename U> void StereoVisualOdometry<T, U>::ImageCallback
 
   if (frameCount_ > 1) {
     tracker_->compute(prevFrameData_, frameData_);
+    auto pose = tracker_->getPose();
+    latestPose_ = pose.matrix() * latestPose_;
+
+    geometry_msgs::msg::PoseStamped poseStampMsg;
+    poseStampMsg.header.stamp = this->get_clock()->now();
+    poseStampMsg.header.frame_id = "map";
+    poseStampMsg.pose = Utils::EigenToPose(latestPose_);
+
+    poses_.push_back(std::move(poseStampMsg));
   }
 
   if (debugFlag_) {
@@ -74,15 +87,29 @@ template <typename T, typename U> void StereoVisualOdometry<T, U>::ImageCallback
 
     auto message = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", debugFrame).toImageMsg();
     message->header.stamp = this->get_clock()->now();
+    auto a = this->get_clock()->now();
     stereoImagePublisher_->publish(*message);
 
-    // auto pointCloud = Utils::vector3dToPointCloud(worldPoints);
-    // pointCloud.header.frame_id = "camera_optical_link";
-    // pointCloud.header.stamp = this->get_clock()->now();
-    // pointCloudPublisher_->publish(pointCloud);
+    publishPath();
+
+    auto pointCloud = Utils::vector3dToPointCloud(worldPoints);
+    pointCloud.header.frame_id = "camera_optical_link";
+    pointCloud.header.stamp = this->get_clock()->now();
+    pointCloudPublisher_->publish(pointCloud);
   }
 
   ++frameCount_;
+}
+
+template <typename T, typename U> void StereoVisualOdometry<T, U>::publishPath() {
+  nav_msgs::msg::Path pathMsg;
+  pathMsg.header.stamp = this->now();
+  pathMsg.header.frame_id = "camera_optical_link";
+  pathMsg.poses = poses_;
+
+  pathPublisher_->publish(pathMsg);
+
+  RCLCPP_INFO(this->get_logger(), "Published path with %zu poses", poses_.size());
 }
 
 template class StereoVisualOdometry<SVO::ORBExtractor, SVO::ORBTracker>;

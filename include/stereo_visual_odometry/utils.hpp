@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include <Eigen/Core>
+#include <geometry_msgs/msg/pose.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 namespace SVO::Utils {
@@ -29,6 +30,21 @@ inline sensor_msgs::msg::PointCloud2 vector3dToPointCloud(const std::vector<Eige
 
   return msg;
 };
+
+inline geometry_msgs::msg::Pose EigenToPose(const Eigen::Matrix4d &xPose) {
+  geometry_msgs::msg::Pose pose;
+  Eigen::Quaterniond q(xPose.block<3, 3>(0, 0));
+  pose.orientation.x = q.x();
+  pose.orientation.y = q.y();
+  pose.orientation.z = q.z();
+  pose.orientation.w = q.w();
+
+  pose.position.x = xPose(0, 3);
+  pose.position.y = xPose(1, 3);
+  pose.position.z = xPose(2, 3);
+
+  return pose;
+}
 } // namespace SVO::Utils
 
 #endif

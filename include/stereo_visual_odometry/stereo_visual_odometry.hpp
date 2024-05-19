@@ -7,9 +7,12 @@
 #include "stereo_visual_odometry/tracker/ORBTracker.hpp"
 #include "stereo_visual_odometry/utils.hpp"
 #include <cv_bridge/cv_bridge.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/synchronizer.h>
+#include <nav_msgs/msg/odometry.hpp>
+#include <nav_msgs/msg/path.hpp>
 #include <opencv2/opencv.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -29,11 +32,13 @@ public:
 private:
   void ImageCallback(const Image::ConstSharedPtr &leftImage, const Image::ConstSharedPtr &rightImage);
   void initializeParameter();
+  void publishPath();
 
 private:
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<Image>::SharedPtr stereoImagePublisher_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointCloudPublisher_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pathPublisher_;
   std::shared_ptr<message_filters::Subscriber<Image>> leftImageSub_;
   std::shared_ptr<message_filters::Subscriber<Image>> rightImageSub_;
   std::shared_ptr<message_filters::Synchronizer<ImageSyncPolicy>> sync_;
@@ -47,6 +52,9 @@ private:
 
   int32_t frameCount_;
   bool debugFlag_;
+
+  std::vector<geometry_msgs::msg::PoseStamped> poses_;
+  Eigen::Matrix4d latestPose_;
 };
 } // namespace SVO
 
