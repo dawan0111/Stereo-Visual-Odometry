@@ -33,6 +33,7 @@ add_library(${library_name}
   src/extractor/ORBExtractor.cpp
   src/tracker/ORBTracker.cpp
   src/optimizer/G2O_Optimizer.cpp
+  src/optimizer/CV_Optimizer.cpp
 )
 ament_target_dependencies(${library_name}
   rclcpp

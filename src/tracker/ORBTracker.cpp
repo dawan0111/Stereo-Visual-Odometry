@@ -4,6 +4,7 @@ namespace SVO {
 ORBTracker::ORBTracker() : Tracker() {
   std::cout << "ORB Tracker" << std::endl;
   optimizer_ = std::make_unique<G2O_Optimizer>();
+  CV_Optimizer_ = std::make_unique<CV_Optimizer>();
   matcher_ = cv::BFMatcher::create(cv::NORM_HAMMING);
   matches_.reserve(2000);
 }
@@ -11,8 +12,11 @@ void ORBTracker::compute(const FrameDataT &prevFrameData, const FrameDataT &fram
   std::vector<cv::DMatch> matches;
   matcher_->match(prevFrameData.leftDesc, frameData.leftDesc, matches);
   const auto &leftCamK = config_->getLeftCameraK();
-  std::vector<Eigen::Vector3d> worldPoints;
-  std::vector<Eigen::Vector2d> cameraPoints;
+  // std::vector<Eigen::Vector3d> worldPoints;
+  // std::vector<Eigen::Vector2d> cameraPoints;
+
+  std::vector<cv::Point3f> worldPoints;
+  std::vector<cv::Point2f> cameraPoints;
 
   matches_.clear();
   worldPoints.reserve(2000);
@@ -23,13 +27,22 @@ void ORBTracker::compute(const FrameDataT &prevFrameData, const FrameDataT &fram
       auto worldPoint = frameData.matches[match.trainIdx].worldPoint;
       auto prevCameraPoint = prevFrameData.leftKeyPoint[match.queryIdx];
 
-      worldPoints.push_back(worldPoint);
+      worldPoints.emplace_back(worldPoint(0), worldPoint(1), worldPoint(2));
       cameraPoints.emplace_back(prevCameraPoint.pt.x, prevCameraPoint.pt.y);
       matches_.push_back(match);
     }
   }
 
-  optimizer_->BundleAdjustment(worldPoints, cameraPoints, leftCamK, pose_);
+  cv::Mat cvLeftCamK = cv::Mat::eye(3, 3, CV_64F);
+  cv::Mat distCoeffs = cv::Mat::zeros(4, 1, CV_64F);
+
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      cvLeftCamK.at<double>(i, j) = leftCamK(i, j);
+    }
+  }
+
+  CV_Optimizer_->BundleAdjustment(worldPoints, cameraPoints, cvLeftCamK, distCoeffs, pose_);
 
   std::cout << "Tracker: matching pair: " << worldPoints.size() << std::endl;
   std::cout << "Pose: " << pose_.matrix() << std::endl;
