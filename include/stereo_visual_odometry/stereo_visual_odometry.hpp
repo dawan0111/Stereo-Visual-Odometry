@@ -9,6 +9,7 @@
 #include "stereo_visual_odometry/utils.hpp"
 #include <cv_bridge/cv_bridge.h>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/synchronizer.h>
@@ -17,6 +18,9 @@
 #include <opencv2/opencv.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <tf2_eigen/tf2_eigen.h>
+#include <tf2_ros/transform_broadcaster.h>
+
 namespace SVO {
 template <typename T, typename U> class StereoVisualOdometry : public rclcpp::Node {
 public:
@@ -34,6 +38,7 @@ private:
   void ImageCallback(const Image::ConstSharedPtr &leftImage, const Image::ConstSharedPtr &rightImage);
   void initializeParameter();
   void publishPath();
+  void publishOdom();
 
 private:
   rclcpp::TimerBase::SharedPtr timer_;
@@ -44,6 +49,10 @@ private:
   std::shared_ptr<message_filters::Subscriber<Image>> leftImageSub_;
   std::shared_ptr<message_filters::Subscriber<Image>> rightImageSub_;
   std::shared_ptr<message_filters::Synchronizer<ImageSyncPolicy>> sync_;
+
+  std::unique_ptr<tf2_ros::TransformBroadcaster> TFbroadcaster_;
+
+  geometry_msgs::msg::TransformStamped odomTransform_;
 
   std::shared_ptr<Config> config_;
   std::unique_ptr<T> extractor_;
@@ -57,6 +66,7 @@ private:
 
   std::vector<geometry_msgs::msg::PoseStamped> poses_;
   Eigen::Matrix4d latestPose_;
+  Eigen::Matrix4d T_optical_world_;
 };
 } // namespace SVO
 

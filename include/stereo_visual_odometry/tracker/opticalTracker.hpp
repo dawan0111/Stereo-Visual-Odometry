@@ -20,7 +20,9 @@ private:
   std::unique_ptr<G2O_Optimizer> optimizer_;
   std::unique_ptr<CV_Optimizer> CV_Optimizer_;
   std::vector<cv::DMatch> matches_;
-  std::vector<cv::Point2f> cameraPts_;
+
+  std::vector<cv::Point2f> prevPoints_;
+  std::vector<cv::Point2f> nextPoints_;
 };
 } // namespace SVO
 

@@ -80,7 +80,7 @@ void ORBExtractor::compute(const cv::Mat &leftImage, const cv::Mat &rightImage) 
   int16_t i = 0;
 
   for (auto &match : matches_) {
-    if (match.distance < 50) {
+    if (match.distance < 40) {
       auto leftPoint = leftKeyPoints[match.queryIdx];
       auto rightPoint = rightKeyPoints[match.trainIdx];
       Eigen::Vector3d worldPoint = Eigen::Vector3d::Zero();

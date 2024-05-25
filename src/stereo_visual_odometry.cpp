@@ -7,6 +7,8 @@ StereoVisualOdometry<T, U>::StereoVisualOdometry(const rclcpp::NodeOptions &opti
       frameCount_(0), debugFlag_(true), latestPose_(Eigen::Matrix4d::Identity()) {
   RCLCPP_INFO(this->get_logger(), "==== stereo_visual_odometry_node =====");
   config_ = std::make_shared<Config>();
+  TFbroadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+
   initializeParameter();
 
   stereoImagePublisher_ = this->create_publisher<Image>("/stereo/image", 10);
@@ -24,7 +26,15 @@ StereoVisualOdometry<T, U>::StereoVisualOdometry(const rclcpp::NodeOptions &opti
 template <typename T, typename U> void StereoVisualOdometry<T, U>::initializeParameter() {
   RCLCPP_INFO(this->get_logger(), "initializeParameter");
 
+  odomTransform_.header.frame_id = "odom";
+  odomTransform_.child_frame_id = "camera_optical_link";
+
   /* clang-format off */
+  T_optical_world_ << 0.0, 0.0, 1.0, 0.0,
+                      -1.0, 0, 0.0, 0.0,
+                      0.0, -1.0, 0.0, 0.0,
+                      0.0, 0.0, 0.0, 1.0;
+
   std::vector<double> LCamK = {
     718.856, 0.0, 607.1928,
     0.0, 718.856, 185.2157,
@@ -72,7 +82,7 @@ void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &left
     geometry_msgs::msg::PoseStamped poseStampMsg;
     poseStampMsg.header.stamp = this->get_clock()->now();
     poseStampMsg.header.frame_id = "map";
-    poseStampMsg.pose = Utils::EigenToPose(latestPose_);
+    poseStampMsg.pose = Utils::EigenToPose(T_optical_world_ * latestPose_);
 
     poses_.push_back(std::move(poseStampMsg));
   }
@@ -105,16 +115,35 @@ void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &left
     }
   }
 
+  publishOdom();
+
   ++frameCount_;
 }
 
 template <typename T, typename U> void StereoVisualOdometry<T, U>::publishPath() {
   nav_msgs::msg::Path pathMsg;
   pathMsg.header.stamp = this->now();
-  pathMsg.header.frame_id = "camera_optical_link";
+  pathMsg.header.frame_id = "odom";
   pathMsg.poses = poses_;
 
   pathPublisher_->publish(pathMsg);
+}
+
+template <typename T, typename U> void StereoVisualOdometry<T, U>::publishOdom() {
+  odomTransform_.header.stamp = this->get_clock()->now();
+
+  Eigen::Affine3d transform(T_optical_world_ * latestPose_);
+  odomTransform_.transform.translation.x = transform.translation().x();
+  odomTransform_.transform.translation.y = transform.translation().y();
+  odomTransform_.transform.translation.z = transform.translation().z();
+
+  Eigen::Quaterniond quat(transform.rotation());
+  odomTransform_.transform.rotation.x = quat.x();
+  odomTransform_.transform.rotation.y = quat.y();
+  odomTransform_.transform.rotation.z = quat.z();
+  odomTransform_.transform.rotation.w = quat.w();
+
+  TFbroadcaster_->sendTransform(odomTransform_);
 }
 
 template class StereoVisualOdometry<SVO::ORBExtractor, SVO::ORBTracker>;

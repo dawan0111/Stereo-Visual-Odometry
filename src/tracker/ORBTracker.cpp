@@ -12,8 +12,6 @@ void ORBTracker::compute(const FrameDataT &prevFrameData, FrameDataT &frameData)
   std::vector<cv::DMatch> matches;
   matcher_->match(prevFrameData.leftDesc, frameData.leftDesc, matches);
   const auto &leftCamK = config_->getLeftCameraK();
-  // std::vector<Eigen::Vector3d> worldPoints;
-  // std::vector<Eigen::Vector2d> cameraPoints;
 
   std::vector<cv::Point3f> worldPoints;
   std::vector<cv::Point2f> cameraPoints;

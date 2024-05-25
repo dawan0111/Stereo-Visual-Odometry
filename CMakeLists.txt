@@ -20,6 +20,7 @@ find_package(nav_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(tf2_eigen REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(g2o REQUIRED)
 find_package(Sophus REQUIRED)
 find_package(Ceres REQUIRED)
@@ -42,6 +43,7 @@ ament_target_dependencies(${library_name}
   nav_msgs
   OpenCV
   tf2_eigen
+  tf2_ros
   cv_bridge
 )
 target_link_libraries(${library_name}

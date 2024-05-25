@@ -21,7 +21,7 @@ def generate_launch_description():
     )
 
     # Node for broadcasting a static transform for camera_optical_link
-    static_tf = Node(
+    camera_tf = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
         arguments=[
@@ -31,8 +31,23 @@ def generate_launch_description():
             "-1.570796",
             "0",
             "-1.570796",
-            "map",
+            "odom",
             "camera_optical_link",
+        ],
+        name="static_tf_publisher",
+    )
+    odom_tf = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=[
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "map",
+            "odom",
         ],
         name="static_tf_publisher",
     )
@@ -40,6 +55,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             stereo_visual_odom_node,
-            static_tf,
+            odom_tf,
+            camera_tf,
         ]
     )
