@@ -18,8 +18,10 @@ struct MatchData {
 template <typename T, typename U> struct FrameData {
   std::vector<T> leftKeyPoint;
   std::vector<T> rightKeyPoint;
+  std::vector<T> trackingKeyPoint;
   U leftDesc;
   U rightDesc;
+  U trackingDesc;
   std::vector<MatchData> matches;
   cv::Mat leftImage;
   cv::Mat rightImage;

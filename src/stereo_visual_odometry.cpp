@@ -67,7 +67,7 @@ void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &left
   if (frameCount_ >= 1) {
     tracker_->compute(prevFrameData_, frameData_);
     auto pose = tracker_->getPose();
-    latestPose_ = pose.matrix() * latestPose_;
+    latestPose_ = latestPose_ * pose.matrix();
 
     geometry_msgs::msg::PoseStamped poseStampMsg;
     poseStampMsg.header.stamp = this->get_clock()->now();
@@ -101,9 +101,8 @@ void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &left
               .toImageMsg();
       trackingImageMsg->header.stamp = this->get_clock()->now();
       trackingImagePublisher_->publish(*trackingImageMsg);
+      publishPath();
     }
-
-    publishPath();
   }
 
   ++frameCount_;
@@ -116,9 +115,8 @@ template <typename T, typename U> void StereoVisualOdometry<T, U>::publishPath()
   pathMsg.poses = poses_;
 
   pathPublisher_->publish(pathMsg);
-
-  RCLCPP_INFO(this->get_logger(), "Published path with %zu poses", poses_.size());
 }
 
 template class StereoVisualOdometry<SVO::ORBExtractor, SVO::ORBTracker>;
+template class StereoVisualOdometry<SVO::ORBExtractor, SVO::OpticalTracker>;
 } // namespace SVO

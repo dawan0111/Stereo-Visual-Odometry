@@ -32,6 +32,7 @@ add_library(${library_name}
   src/stereo_visual_odometry.cpp
   src/extractor/ORBExtractor.cpp
   src/tracker/ORBTracker.cpp
+  src/tracker/opticalTracker.cpp
   src/optimizer/G2O_Optimizer.cpp
   src/optimizer/CV_Optimizer.cpp
 )

@@ -8,7 +8,7 @@ ORBTracker::ORBTracker() : Tracker() {
   matcher_ = cv::BFMatcher::create(cv::NORM_HAMMING);
   matches_.reserve(2000);
 }
-void ORBTracker::compute(const FrameDataT &prevFrameData, const FrameDataT &frameData) {
+void ORBTracker::compute(const FrameDataT &prevFrameData, FrameDataT &frameData) {
   std::vector<cv::DMatch> matches;
   matcher_->match(prevFrameData.leftDesc, frameData.leftDesc, matches);
   const auto &leftCamK = config_->getLeftCameraK();

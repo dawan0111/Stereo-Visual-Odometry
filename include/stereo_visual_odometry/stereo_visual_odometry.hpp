@@ -5,6 +5,7 @@
 #include "stereo_visual_odometry/config/config.hpp"
 #include "stereo_visual_odometry/extractor/ORBExtractor.hpp"
 #include "stereo_visual_odometry/tracker/ORBTracker.hpp"
+#include "stereo_visual_odometry/tracker/opticalTracker.hpp"
 #include "stereo_visual_odometry/utils.hpp"
 #include <cv_bridge/cv_bridge.h>
 #include <geometry_msgs/msg/pose_stamped.hpp>
