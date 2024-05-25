@@ -3,12 +3,12 @@
 namespace SVO {
 ORBExtractor::ORBExtractor() : Extractor() {
   std::cout << "===== ORB Extractor =====" << std::endl;
-  detector_ = cv::ORB::create(2000);
+  detector_ = cv::ORB::create(500);
   matcher_ = cv::BFMatcher::create(cv::NORM_HAMMING);
 
-  result_.leftKeyPoint.reserve(2000);
-  result_.rightKeyPoint.reserve(2000);
-  result_.matches.reserve(2000);
+  result_.leftKeyPoint.reserve(4000);
+  result_.rightKeyPoint.reserve(4000);
+  result_.matches.reserve(4000);
 }
 void ORBExtractor::compute(const cv::Mat &leftImage, const cv::Mat &rightImage) {
   clear();
@@ -17,14 +17,64 @@ void ORBExtractor::compute(const cv::Mat &leftImage, const cv::Mat &rightImage) 
 
   std::vector<cv::KeyPoint> leftKeyPoints;
   std::vector<cv::KeyPoint> rightKeyPoints;
+  std::vector<cv::Mat> leftDescs;
+  std::vector<cv::Mat> rightDescs;
   cv::Mat leftDesc;
   cv::Mat rightDesc;
 
-  leftKeyPoints.reserve(2000);
-  rightKeyPoints.reserve(2000);
+  leftKeyPoints.reserve(4000);
+  rightKeyPoints.reserve(4000);
 
-  detector_->detectAndCompute(leftImage, cv::noArray(), leftKeyPoints, leftDesc);
-  detector_->detectAndCompute(rightImage, cv::noArray(), rightKeyPoints, rightDesc);
+  int8_t gridSize = 4;
+  int stepX = leftImage.cols / gridSize;
+  int stepY = leftImage.rows / gridSize;
+
+  for (int cellY = 0; cellY < gridSize; ++cellY) {
+    for (int cellX = 0; cellX < gridSize; ++cellX) {
+      int y = cellY * stepY;
+      int x = cellX * stepX;
+      cv::Rect region(x, y, stepX, stepY);
+      if (x + stepX > leftImage.cols)
+        region.width = leftImage.cols - x;
+      if (y + stepY > leftImage.rows)
+        region.height = leftImage.rows - y;
+
+      cv::Mat leftSubImg = leftImage(region);
+      cv::Mat rightSubImg = rightImage(region);
+      std::vector<cv::KeyPoint> leftSubKeypoints;
+      std::vector<cv::KeyPoint> rightSubKeypoints;
+      cv::Mat leftSubDescriptors;
+      cv::Mat rightSubDescriptors;
+
+      detector_->detectAndCompute(leftSubImg, cv::noArray(), leftSubKeypoints, leftSubDescriptors);
+      detector_->detectAndCompute(rightSubImg, cv::noArray(), rightSubKeypoints, rightSubDescriptors);
+
+      for (auto &kp : leftSubKeypoints) {
+        kp.pt.x += x;
+        kp.pt.y += y;
+      }
+
+      for (auto &kp : rightSubKeypoints) {
+        kp.pt.x += x;
+        kp.pt.y += y;
+      }
+
+      leftKeyPoints.insert(leftKeyPoints.end(), leftSubKeypoints.begin(), leftSubKeypoints.end());
+      rightKeyPoints.insert(rightKeyPoints.end(), rightSubKeypoints.begin(), rightSubKeypoints.end());
+
+      if (leftDesc.cols == 0) {
+        leftDesc = leftSubDescriptors;
+      } else if (leftSubKeypoints.size() > 0) {
+        cv::vconcat(leftDesc, leftSubDescriptors, leftDesc);
+      }
+
+      if (rightDesc.cols == 0) {
+        rightDesc = rightSubDescriptors;
+      } else if (rightSubKeypoints.size() > 0) {
+        cv::vconcat(rightDesc, rightSubDescriptors, rightDesc);
+      }
+    }
+  }
   matcher_->match(leftDesc, rightDesc, matches_);
 
   int16_t i = 0;
@@ -32,7 +82,7 @@ void ORBExtractor::compute(const cv::Mat &leftImage, const cv::Mat &rightImage) 
   std::cout << (baseline * leftCamK(0, 0)) << std::endl;
 
   for (auto &match : matches_) {
-    if (match.distance < 30) {
+    if (match.distance < 50) {
       auto leftPoint = leftKeyPoints[match.queryIdx];
       auto rightPoint = rightKeyPoints[match.trainIdx];
       Eigen::Vector3d worldPoint = Eigen::Vector3d::Zero();
@@ -41,7 +91,7 @@ void ORBExtractor::compute(const cv::Mat &leftImage, const cv::Mat &rightImage) 
       double x = ((leftPoint.pt.x - leftCamK(0, 2)) * z) / leftCamK(0, 0);
       double y = ((leftPoint.pt.y - leftCamK(1, 2)) * z) / leftCamK(1, 1);
 
-      if (z >= 35 || z <= 0 || leftPoint.pt.y != rightPoint.pt.y || leftPoint.pt.x == rightPoint.pt.x) {
+      if (z >= 35 || z <= 0 || leftPoint.pt.x == rightPoint.pt.x) {
         continue;
       }
 

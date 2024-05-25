@@ -5,7 +5,7 @@ CV_Optimizer::CV_Optimizer() { std::cout << "===== CV_Optimizer (SolvePnP) =====
 void CV_Optimizer::BundleAdjustment(const WorldPoints &points3D, const CameraPoints &points2D, const cv::Mat &K,
                                     const cv::Mat &distCoeffs, Sophus::SE3d &pose) {
   cv::Mat rVec, tVec;
-  bool success = cv::solvePnPRansac(points3D, points2D, K, distCoeffs, rVec, tVec);
+  bool success = cv::solvePnPRansac(points3D, points2D, K, distCoeffs, rVec, tVec, false, 200, 2, 0.999);
   if (success) {
     cv::Mat R;
     Eigen::Matrix3d eigenR;

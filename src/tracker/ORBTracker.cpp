@@ -19,11 +19,11 @@ void ORBTracker::compute(const FrameDataT &prevFrameData, const FrameDataT &fram
   std::vector<cv::Point2f> cameraPoints;
 
   matches_.clear();
-  worldPoints.reserve(2000);
-  cameraPoints.reserve(2000);
+  worldPoints.reserve(4000);
+  cameraPoints.reserve(4000);
 
   for (auto &match : matches) {
-    if (match.distance < 40) {
+    if (match.distance < 30) {
       auto worldPoint = frameData.matches[match.trainIdx].worldPoint;
       auto prevCameraPoint = prevFrameData.leftKeyPoint[match.queryIdx];
 
@@ -43,9 +43,6 @@ void ORBTracker::compute(const FrameDataT &prevFrameData, const FrameDataT &fram
   }
 
   CV_Optimizer_->BundleAdjustment(worldPoints, cameraPoints, cvLeftCamK, distCoeffs, pose_);
-
-  std::cout << "Tracker: matching pair: " << worldPoints.size() << std::endl;
-  std::cout << "Pose: " << pose_.matrix() << std::endl;
 }
 
 cv::Mat ORBTracker::getDebugFrame(const FrameDataT &prevFrameData, const FrameDataT &frameData) {
@@ -58,7 +55,7 @@ cv::Mat ORBTracker::getDebugFrame(const FrameDataT &prevFrameData, const FrameDa
     auto rightPoint = frameData.leftKeyPoint[match.trainIdx];
     auto rightX = rightPoint.pt.x;
     auto rightY = rightPoint.pt.y + leftImageRow;
-    cv::circle(resultImage, leftPoint.pt, 2, cv::Scalar(0, 255, 0), 1, cv::LINE_4, 0);
+    cv::circle(resultImage, leftPoint.pt, 4, cv::Scalar(0, 255, 0), 1, cv::LINE_4, 0);
     cv::circle(resultImage, cv::Point2f(rightX, rightY), 4, cv::Scalar(0, 255, 0), 1, cv::LINE_4, 0);
     cv::line(resultImage, leftPoint.pt, cv::Point2f(rightX, rightY), cv::Scalar(0, 255, 0), 1);
   }
