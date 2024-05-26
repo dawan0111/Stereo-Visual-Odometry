@@ -39,3 +39,16 @@ Clone the package from GitHub and install the required dependencies:
 git clone https://github.com/dawan0111/Stereo-Visual-Odometry.git
 cd Stereo-Visual-Odometry
 ```
+
+## Run Kitti Example
+
+### Clone Kitti Topic Package
+```bash
+git clone https://github.com/dawan0111/ROS2-Kitti-Topic.git
+```
+- Change dataset path! (kitti_image, kitti_path)
+```bash
+ros2 launch stereo_visual_odometry stereo_visual_odom.launch.py
+ros2 run kitti_dataset kitti_path
+ros2 run kitti_dataset kitti_image
+```
