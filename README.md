@@ -52,3 +52,12 @@ ros2 launch stereo_visual_odometry stereo_visual_odom.launch.py
 ros2 run kitti_dataset kitti_path
 ros2 run kitti_dataset kitti_image
 ```
+
+## Contribution
+
+To contribute to this project, follow these steps:
+
+1. Fork this repository.
+2. Create a new branch for your feature or bug fix.
+3. Commit and push your changes.
+4. Open a Pull Request to contribute your changes.
