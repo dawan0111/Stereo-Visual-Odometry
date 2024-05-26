@@ -1,7 +1,7 @@
 # Stereo-Visual-Odometry
 
 ## Video
-[![Video Link](https://i.postimg.cc/4xfvCXk3/SVO-online-video-cutter-com-1.gif)](https://youtu.be/MRt1zt7aMEY)
+[![gif.gif](https://i.postimg.cc/4xfvCXk3/SVO-online-video-cutter-com-1.gif)](https://postimg.cc/0rqk7Czv)
 
 [[🔗 Video Link]](https://youtu.be/MRt1zt7aMEY)
 
