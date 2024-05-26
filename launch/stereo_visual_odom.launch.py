@@ -15,7 +15,7 @@ def generate_launch_description():
 
     config = os.path.join(
         get_package_share_directory("stereo_visual_odometry"),
-        "param",
+        "params",
         "kitti00_param.yaml",
     )
 
