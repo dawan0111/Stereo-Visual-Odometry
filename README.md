@@ -3,7 +3,7 @@
 ## Video
 [![Video Link](https://i.postimg.cc/4xfvCXk3/SVO-online-video-cutter-com-1.gif)](https://youtu.be/MRt1zt7aMEY)
 
-[[🔗 Video Link]] (https://youtu.be/MRt1zt7aMEY)
+[[🔗 Video Link]](https://youtu.be/MRt1zt7aMEY)
 
 ## Overview
 This ROS2 Stereo Visual Odometry package facilitates the development and testing of stereo visual odometry systems by providing a highly customizable framework. Users can easily interchange feature extractors, trackers, and optimizers thanks to its template-based design. This package leverages popular libraries such as Sophus, g2o, Ceres, and OpenCV, focusing on flexibility rather than raw performance.
