@@ -67,6 +67,9 @@ private:
   std::vector<geometry_msgs::msg::PoseStamped> poses_;
   Eigen::Matrix4d latestPose_;
   Eigen::Matrix4d T_optical_world_;
+
+  std::string odomFrameId_;
+  std::string cameraOpticalFrameId_;
 };
 } // namespace SVO
 

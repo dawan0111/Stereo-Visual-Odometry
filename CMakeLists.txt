@@ -75,6 +75,8 @@ install(TARGETS
 
 install (DIRECTORY
   launch
+  params
+  rviz
   DESTINATION share/${PROJECT_NAME}
 )
 if(BUILD_TESTING)

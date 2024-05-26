@@ -24,11 +24,6 @@ StereoVisualOdometry<T, U>::StereoVisualOdometry(const rclcpp::NodeOptions &opti
       std::bind(&StereoVisualOdometry::ImageCallback, this, std::placeholders::_1, std::placeholders::_2));
 }
 template <typename T, typename U> void StereoVisualOdometry<T, U>::initializeParameter() {
-  RCLCPP_INFO(this->get_logger(), "initializeParameter");
-
-  odomTransform_.header.frame_id = "odom";
-  odomTransform_.child_frame_id = "camera_optical_link";
-
   /* clang-format off */
   T_optical_world_ << 0.0, 0.0, 1.0, 0.0,
                       -1.0, 0, 0.0, 0.0,
@@ -48,6 +43,16 @@ template <typename T, typename U> void StereoVisualOdometry<T, U>::initializePar
   /* clang-format on */
   double baseline = 0.537;
 
+  cameraOpticalFrameId_ = this->declare_parameter("camera_optical_frame", "camera_optical_link");
+  odomFrameId_ = this->declare_parameter("odom_frame", "odom");
+  baseline = this->declare_parameter("baseline", baseline);
+  LCamK = this->declare_parameter("leftCamK", LCamK);
+  RCamK = this->declare_parameter("rightCamK", RCamK);
+  debugFlag_ = this->declare_parameter("debug", true);
+
+  odomTransform_.header.frame_id = odomFrameId_;
+  odomTransform_.child_frame_id = cameraOpticalFrameId_;
+
   Eigen::Matrix3d LCamK_;
   Eigen::Matrix3d RCamK_;
 
@@ -57,12 +62,21 @@ template <typename T, typename U> void StereoVisualOdometry<T, U>::initializePar
       RCamK_(i, j) = RCamK[i * 3 + j];
     }
   }
+
   config_->setBaseline(baseline);
   config_->setLeftCameraK(std::move(LCamK_));
   config_->setRightCameraK(std::move(RCamK_));
 
   extractor_->registerConfig(config_);
   tracker_->registerConfig(config_);
+
+  std::cout << "===== Configuration =====" << std::endl;
+  std::cout << "Left camera intrinsic: \n" << config_->getLeftCameraK() << std::endl;
+  std::cout << "Right camera intrinsic: \n" << config_->getRightCameraK() << std::endl;
+  std::cout << "Stereo baseline: " << config_->getBaseline() << std::endl;
+  std::cout << "Odom frame id: " << odomFrameId_ << std::endl;
+  std::cout << "Camera optical frame id: " << cameraOpticalFrameId_ << std::endl;
+  std::cout << "Debug: " << debugFlag_ << std::endl;
 }
 template <typename T, typename U>
 void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &leftImage,
@@ -81,13 +95,14 @@ void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &left
 
     geometry_msgs::msg::PoseStamped poseStampMsg;
     poseStampMsg.header.stamp = this->get_clock()->now();
-    poseStampMsg.header.frame_id = "map";
+    poseStampMsg.header.frame_id = odomFrameId_;
     poseStampMsg.pose = Utils::EigenToPose(T_optical_world_ * latestPose_);
 
     poses_.push_back(std::move(poseStampMsg));
   }
 
   if (debugFlag_) {
+    RCLCPP_INFO(this->get_logger(), "current Frame: %d", frameCount_);
     std::vector<Eigen::Vector3d> worldPoints;
 
     for (auto &match : frameData_.matches) {
@@ -101,7 +116,7 @@ void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &left
     stereoImagePublisher_->publish(*message);
 
     auto pointCloud = Utils::vector3dToPointCloud(worldPoints);
-    pointCloud.header.frame_id = "camera_optical_link";
+    pointCloud.header.frame_id = cameraOpticalFrameId_;
     pointCloud.header.stamp = this->get_clock()->now();
     pointCloudPublisher_->publish(pointCloud);
 
@@ -123,7 +138,7 @@ void StereoVisualOdometry<T, U>::ImageCallback(const Image::ConstSharedPtr &left
 template <typename T, typename U> void StereoVisualOdometry<T, U>::publishPath() {
   nav_msgs::msg::Path pathMsg;
   pathMsg.header.stamp = this->now();
-  pathMsg.header.frame_id = "odom";
+  pathMsg.header.frame_id = odomFrameId_;
   pathMsg.poses = poses_;
 
   pathPublisher_->publish(pathMsg);
